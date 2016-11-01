@@ -1,0 +1,7 @@
+1.hadoop-streaming
+cat data | mapper.py | reducer.py
+hadoop jar hadoop-streaming.jar -mapper mapper.py -reducer reducer.py -input /input -output /output -file mapper.py -file reducer.py
+-numReduceTasks 3
+标准输入输出
+
+2.hadoop pipes

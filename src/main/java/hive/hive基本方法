@@ -1,0 +1,143 @@
+1.表信息描述
+desc formatted students_hive;
+
+2.表删除
+drop table students_hive;
+
+3.表创建
+1)从头创建
+create table [if not exists] students_hive(
+    name string,
+    salary float,
+    subordinates array<string>,
+    deductions map<string,float>,
+    address struct<street:string,city:string>
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t'
+collection items terminated by ','
+map keys terminated by ':'
+lines terminated by '\n' stored as textfile;
+2)由一个表创建另一个(不复制数据)
+create table test3 like test2;
+3)从其他表查询创建表
+create table test4 as select name.addr from test5;
+
+4.数据导入
+1)从本地导入
+load data [local] inpath '\path' [overwrite|into]  table students_hive;
+local:如果有就是本地linux，没有在hdfs上
+overwrite:覆盖
+2)从其他表导入
+insert [overwrite|into] table tablename select id,name from tablename2;
+3)使用external分区表需要添加分区才能看到数据
+
+5.内外部表区别
+使用表删除不会删除外部表
+
+6.数据查询
+1)只查询10条内容
+select * from students_hive limit 10;
+2)查询特定值
+select * from students_hive where age=28;
+
+7.hive表分区(避免全部查询)
+1)建表
+create table tablename(
+)
+partitioned by (dt string, type string)
+2)增加分区
+alter table tablename add if not exists partition(dt='',type='')
+3)删除分区
+alter table tablename drop if not exists partition(dt='',type='')
+4)查看分区
+show partitions tablename;
+5)载入数据
+load data local inpath 'data/t8' into table t12 partition(dt=2015,type=8);
+
+8.hive表分桶(根据哈希对列分桶)
+//set hive.enforce.bucketing = true
+create table tablename(
+    id int,
+    name string
+)
+clustered by (id) sorted by (name) into 4 buckets;
+
+9.hive数据导出
+1)hadoop命令(get、text)
+hadoop fs -get /path/* /pathlocal
+2)insert [overwrite|into] local directory '/path' [row format delimited fields terminated by '\t']
+select name,salary from employees
+
+10.hive动态分区
+//set hive.exec.dynamic.partition=true
+//set hive.exec.dynamic.partition.mode=nostrick
+insert overwrite table tablename partition(value) select name,age as value from tablename2; //age当做value分区
+
+11.hive表属性操作
+1)修改表名
+alter table table_name rename to table_name_new;
+2)修改列名
+alter table table_name change column c1 c2 int after name;//放name之后
+3)增加列
+alter table table_name add columns(c1 string,c2 int);
+4)设置分隔符
+alter table table_name [partition(dt='xxx')] set serdeproperties('field.delim'='\t')
+5)修改表位置
+alter table table_name [partition(dt='xxx')] set location 'path';
+6)修改内外部表
+alter table table_name set TBLPROPERTIES('EXTERNAL'='TRUE'); //or FALSE
+
+12.hive高级查询
+1)group by
+//受限于reduce数量，设置reduce参数，mapred.reduce.tasks
+//set mapred.reduce.tasks=5;
+count计数
+select age,count(*) from employee_hbase group by age;
+sum求和 //sum(col)+cast(1 as bigint)
+avg求平均
+distinct不同值个数
+select distinct age from employee_hbase;
+2)order by，全局排序
+select c1,c2 from table where condition order by c1,co2[asc|desc]//升序|降序
+3)join
+a. join都存在才输出
+select s.col1,s.col2,t.col4 from
+(select col1,col2 from a)s join (select col3,col4 from b)t on s.col=t.col3 and xxx;
+b. left outer join左边都输出，右边满足条件才输出
+c. right outer join相反
+select s.key,s.sex,t.age
+from
+(select key,sex from employee)s right outer join (select key,age from employee_hbase)t
+on s.key=t.key;
+4)distribute by
+分散数据，安装col把数据分散不同reduce
+5)sort by
+按照col列把数据排序，局部排序
+select col1,col2 from M distribute by col1 sort by col1 asc, col2 desc
+通过设置reduce数目，确定输出文件数量
+6)cluster by
+把有相同值的数据聚集并排序
+cluster by col == distribute by col order by col
+
+13.hive函数
+1)select case when xxx then xxx when xxx then xxx else xxx end from tablename;
+2)where (xxx or xxx) and xxx
+3)if(condiction,truexxx,falsexxx)
+4)处理json格式
+select get_json_object('{'name':'jack'}','$.name') from tablename;
+5)处理url
+select parse_url('www.baidu.com/xxxxx','HOST') from tablename;
+6)连接字符串concat
+select concat(key,'123') from employee;
+7)去重collect_set
+select collect_set(key) from employee;
+8)查找第一个
+select id,money,first_value(money) over (partition by id order by money rows between [1|unbounded] preceding and 1 following)
+from tablename;
+between 1 preceding and 1 following:preceding-当前行-following
+9)使用java函数
+select java_method("java.lang.Math","sqrt",cast(id as double)) from tablename;
+10)正则表达式
+select 1 from dual where 'footbar' rlike 'f.*r$';
+11)自定义函数
+UDF和UDAF

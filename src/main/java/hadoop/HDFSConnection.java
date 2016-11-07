@@ -82,7 +82,7 @@ public class HDFSConnection {
         try {
             getDirectoryFromHdfs("/test");
 
-            uploadFileToHDFS("C:/xugang/test/record.txt", "/test");
+            uploadFileToHDFS("C:/xugang/test/employee_test.txt", "/test");
 //            downLoadFileFromHDFS("/test/wc.txt");
 
 

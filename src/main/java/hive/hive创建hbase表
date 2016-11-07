@@ -1,0 +1,26 @@
+1.hive和hbase关联表的创建
+CREATE TABLE employee_hbase
+(key string,age int,sex string)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES
+("hbase.columns.mapping" = ":key,info:age,info:sex") TBLPROPERTIES ("hbase.table.name"="employee_hbase");
+
+其中 Hive 表名：employee_hbase 有 key,age,sex 三列
+HBase表名：employee_hbase 有 rowkey = key 列族 info 列 age sex
+名称一一对应
+
+2.hive中数据库的建立
+CREATE TABLE employee
+(
+   name string,
+   age int,
+   sex string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t';
+
+3.数据从hdfs中导入hive
+load data inpath '/test/employee_test.txt' into table employee;
+
+4.数据从hive导入hbase
+insert into table employee_hbase select name as key,age,sex from employee;
+可以将已有Hive 数据导入到HBase中

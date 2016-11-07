@@ -28,6 +28,7 @@ public class HBaseConnection {
         cfg = HBaseConfiguration.create();
         try {
             hConn = HConnectionManager.createConnection(cfg);
+            System.out.print("=============================="+cfg.get("hbase.rootdir"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -150,7 +151,7 @@ public class HBaseConnection {
 //        Result result = conn.getData("students","Tom");
 //        conn.format(result);
         //扫描
-        conn.hbaseScan("students_age");
+        conn.hbaseScan("students");
         //过滤器扫描
 //        conn.filterTest("students");
 
